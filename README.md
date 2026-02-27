@@ -1,6 +1,6 @@
 # Automated BI Reporting Workflow: From Raw Data to Visuals &amp; AI Insights
 
-[![Watch the 1-min Demo] (https://www.loom.com/share/8edbcc28587147ee8eed8e2540bc2ea1)
+[![Watch the 1-min Demo] https://www.loom.com/share/8edbcc28587147ee8eed8e2540bc2ea1
 
 https://github.com/user-attachments/assets/0a87e49d-8610-4022-871f-2646e0897a3b
 
