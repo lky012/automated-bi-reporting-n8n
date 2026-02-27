@@ -1,0 +1,286 @@
+{
+  "name": "Automated BI Reporting: From Raw Data to Visuals & AI Insights",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "weeks",
+              "triggerAtDay": [
+                1
+              ],
+              "triggerAtHour": "={{ 9 }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -16,
+        112
+      ],
+      "id": "6fabd623-70de-4a05-b24c-fcc22ff7b493",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1bGVDRl7vWSOVHaFbXFeiLvgLmvAJKfgVJo8uAXyD1eU",
+          "mode": "list",
+          "cachedResultName": "Florist_Ops_Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1bGVDRl7vWSOVHaFbXFeiLvgLmvAJKfgVJo8uAXyD1eU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Orders",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1bGVDRl7vWSOVHaFbXFeiLvgLmvAJKfgVJo8uAXyD1eU/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        192,
+        0
+      ],
+      "id": "401c7f58-bc46-4fe8-b61b-71eb5d776544",
+      "name": "Get Orders",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "jQRh2KCz7MoVA39L",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1bGVDRl7vWSOVHaFbXFeiLvgLmvAJKfgVJo8uAXyD1eU",
+          "mode": "list",
+          "cachedResultName": "Florist_Ops_Data",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1bGVDRl7vWSOVHaFbXFeiLvgLmvAJKfgVJo8uAXyD1eU/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1902221692,
+          "mode": "list",
+          "cachedResultName": "Costs ",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1bGVDRl7vWSOVHaFbXFeiLvgLmvAJKfgVJo8uAXyD1eU/edit#gid=1902221692"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        192,
+        192
+      ],
+      "id": "80f5fcea-80f9-40ec-a427-f395e757547f",
+      "name": "Get Costs",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "jQRh2KCz7MoVA39L",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-flash",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are a Senior Business Analyst leading our Weekly Business Review (WBR). Write a \"Strategic Executive Summary\" (max 150 words).\n\nData Context:\n- Report Date: {{ $node[\"Code\"].json[\"latestDate\"] }}\n- Weekly Cash Margin: {{ $node[\"Code\"].json[\"report\"][\"weekly\"][\"margin\"] }}%\n- Monthly Rev YoY: {{ $node[\"Code\"].json[\"yoy\"][\"rev\"][\"str\"] }}\n- Top Occasions (MTD): {{ $node[\"Code\"].json[\"report\"][\"monthly\"][\"top3Occasions\"] }}\n- Trending Colors (Past 30 Days): {{ $node[\"Code\"].json[\"currentTopColor\"] }}\n\nTask: Structure your analysis into 3 distinct paragraphs using <p> tags. Start each paragraph with a bolded header. Use an internal business tone (refer to the business as \"our store\" or \"the brand\", NOT \"the boutique\").\n\n1. <b>Financial Performance:</b> Analyze our YoY monthly growth and Weekly Margin. Assess our expansion momentum vs. short-term liquidity.\n2. <b>Market Drivers:</b> Correlate current Top Occasions with our revenue velocity. Explain how these events shaped our recent performance.\n3. <b>Strategic Outlook:</b> Based on the \"Report Date\", identify the next major seasonal shift. Recommend ONE specific procurement strategy (varieties and colors) to bridge current trends with upcoming demand.\n\nSTRICT FORMATTING RULES:\n- Output HTML ONLY. Wrap each section in <p> tags to ensure clear spacing.\n- Use <b> for key metrics and headers.\n- NO EMOJIS. NO RAW DATA ARRAYS.\n- TONE: Internal, formal, and analytical. Use \"we\", \"our\", or \"the brand\"."
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.1,
+      "position": [
+        688,
+        112
+      ],
+      "id": "2e67f471-b808-42ba-8133-63d680f140cd",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "9LMFdwrObSBHeBH8",
+          "name": "My Gemini Key"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const orders = $items(\"Get Orders\");\nconst costs = $items(\"Get Costs\");\n\nlet maxDate = new Date(\"2000-01-01\");\norders.forEach(o => {\n    if (o.json[\"Delivery Date\"]) {\n        let d = new Date(o.json[\"Delivery Date\"]);\n        if (d > maxDate) maxDate = d;\n    }\n});\nlet maxDateStr = maxDate.toISOString().substring(0, 10);\nlet currentMonthPrefix = maxDateStr.substring(0, 7);\n\nlet lastMonthDate = new Date(maxDate.getFullYear(), maxDate.getMonth() - 1, 1);\nlet lastMonthPrefix = lastMonthDate.toISOString().substring(0, 7);\nlet lastYearMonthPrefix = `${maxDate.getFullYear() - 1}-${String(maxDate.getMonth() + 1).padStart(2, '0')}`;\n\nlet oneWeekAgo = new Date(maxDate); oneWeekAgo.setDate(maxDate.getDate() - 7);\nlet twoWeeksAgo = new Date(maxDate); twoWeeksAgo.setDate(maxDate.getDate() - 14);\n\nlet report = {\n    weekly:  { rev: 0, cost: 0, orders: 0, channels: {}, costs: {}, colors: {} },\n    prevWeekly: { rev: 0, cost: 0, orders: 0 },\n    monthly: { rev: 0, cost: 0, orders: 0, occasions: {}, channels: {}, costs: {}, freshQty: 0, wasteQty: 0 }, \n    lastMonthly: { rev: 0, cost: 0, orders: 0 },\n    lastYearMonthly: { rev: 0, cost: 0, orders: 0 },\n    yearly:  { rev: 0, cost: 0, orders: 0 }\n};\n\nlet trendMonthly = {};\nlet trendColorMonthly = {}; \nlet allColorsCount = {};\nlet wastageByItem = {}; // 用於統計各項花材的耗損量\n\n// --- 處理 Orders ---\norders.forEach(order => {\n    let dateStr = order.json[\"Delivery Date\"];\n    if (!dateStr) return;\n    let d = new Date(dateStr);\n    let rev = Number(order.json[\"Selling Price ($)\"]) || 0;\n    let monthStr = dateStr.substring(0, 7);\n    \n    report.yearly.rev += rev; report.yearly.orders += 1;\n    if(!trendMonthly[monthStr]) trendMonthly[monthStr] = {rev: 0, cost: 0};\n    trendMonthly[monthStr].rev += rev;\n\n    let co = order.json[\"Main Colors\"] || \"Unknown\";\n    if(!trendColorMonthly[monthStr]) trendColorMonthly[monthStr] = {};\n    trendColorMonthly[monthStr][co] = (trendColorMonthly[monthStr][co] || 0) + 1;\n    allColorsCount[co] = (allColorsCount[co] || 0) + 1;\n\n    if (dateStr.startsWith(currentMonthPrefix)) {\n        report.monthly.rev += rev; report.monthly.orders += 1;\n        let occ = order.json[\"Occasion\"] || \"Unknown\";\n        let ch = order.json[\"Sales Channel\"] || \"Unknown\";\n        report.monthly.occasions[occ] = (report.monthly.occasions[occ] || 0) + 1;\n        report.monthly.channels[ch] = (report.monthly.channels[ch] || 0) + 1; \n    }\n    if (dateStr.startsWith(lastMonthPrefix)) { report.lastMonthly.rev += rev; report.lastMonthly.orders += 1; }\n    if (dateStr.startsWith(lastYearMonthPrefix)) { report.lastYearMonthly.rev += rev; report.lastYearMonthly.orders += 1; }\n\n    if (d > oneWeekAgo && d <= maxDate) {\n        report.weekly.rev += rev; report.weekly.orders += 1;\n        report.weekly.colors[co] = (report.weekly.colors[co] || 0) + 1;\n    }\n    if (d > twoWeeksAgo && d <= oneWeekAgo) { report.prevWeekly.rev += rev; report.prevWeekly.orders += 1; }\n});\n\n// --- 處理 Costs (包含 Wastage 邏輯) ---\ncosts.forEach(cost => {\n    let dateStr = cost.json[\"Purchase Date\"];\n    if (!dateStr) return;\n    let d = new Date(dateStr);\n    let cst = Number(cost.json[\"Total Cost ($)\"]) || 0;\n    let monthStr = dateStr.substring(0, 7);\n    \n    let itemName = cost.json[\"Item Name\"] || \"Unknown\";\n    let category = cost.json[\"Category\"] || \"Other\";\n    let qty = Number(cost.json[\"Quantity\"]) || 0;\n    let wasteQty = Number(cost.json[\"Wastage Qty\"]) || 0;\n\n    report.yearly.cost += cst;\n    if(!trendMonthly[monthStr]) trendMonthly[monthStr] = {rev: 0, cost: 0};\n    trendMonthly[monthStr].cost += cst;\n\n    if (dateStr.startsWith(currentMonthPrefix)) {\n        report.monthly.cost += cst;\n        report.monthly.costs[category] = (report.monthly.costs[category] || 0) + cst;\n        \n        // 只統計鮮花類的耗損率，排除包裝耗材\n        if (category === \"Fresh Flower\" || itemName.includes(\"Rose\") || itemName.includes(\"Tulip\") || itemName.includes(\"Gerbera\") || itemName.includes(\"Carnation\") || itemName.includes(\"Sunflower\")) {\n            report.monthly.freshQty += qty;\n            report.monthly.wasteQty += wasteQty;\n            \n            let fullName = `${itemName} (${cost.json[\"Color/Variety\"] || \"\"})`;\n            wastageByItem[fullName] = (wastageByItem[fullName] || 0) + wasteQty;\n        }\n    }\n    if (dateStr.startsWith(lastMonthPrefix)) report.lastMonthly.cost += cst;\n    if (dateStr.startsWith(lastYearMonthPrefix)) report.lastYearMonthly.cost += cst;\n\n    if (d > oneWeekAgo && d <= maxDate) report.weekly.cost += cst; \n    if (d > twoWeeksAgo && d <= oneWeekAgo) report.prevWeekly.cost += cst;\n});\n\n// --- Helper Functions ---\nconst getMargin = (rev, cost) => rev > 0 ? (((rev - cost) / rev) * 100).toFixed(1) : 0;\nconst calcVar = (curr, prev, inverseColor = false) => {\n    if (prev == 0) return curr > 0 ? { str: \"▲ +100%\", color: inverseColor ? \"#E74C3C\" : \"#10B981\" } : { str: \"- 0%\", color: \"#64748B\" };\n    let pct = ((curr - prev) / prev) * 100;\n    let sign = pct > 0 ? \"▲ +\" : (pct < 0 ? \"▼ \" : \"- \");\n    let isPositive = pct >= 0;\n    let color = isPositive ? (inverseColor ? \"#E74C3C\" : \"#10B981\") : (inverseColor ? \"#10B981\" : \"#E74C3C\");\n    return { str: `${sign}${pct.toFixed(1)}%`, color: color };\n};\n\nreport.weekly.margin = getMargin(report.weekly.rev, report.weekly.cost);\nreport.prevWeekly.margin = getMargin(report.prevWeekly.rev, report.prevWeekly.cost);\nreport.monthly.margin = getMargin(report.monthly.rev, report.monthly.cost);\nreport.lastMonthly.margin = getMargin(report.lastMonthly.rev, report.lastMonthly.cost);\nreport.lastYearMonthly.margin = getMargin(report.lastYearMonthly.rev, report.lastYearMonthly.cost);\nreport.monthly.spoilageRate = report.monthly.freshQty > 0 ? ((report.monthly.wasteQty / report.monthly.freshQty) * 100).toFixed(1) : 0;\n\nreport.weekly.topColor = Object.keys(report.weekly.colors).length > 0 ? Object.keys(report.weekly.colors).reduce((a, b) => report.weekly.colors[a] > report.weekly.colors[b] ? a : b) : \"N/A\";\nreport.monthly.top3Occasions = Object.keys(report.monthly.occasions).sort((a, b) => report.monthly.occasions[b] - report.monthly.occasions[a]).slice(0, 3).join(', ') || \"N/A\";\n\nlet wow = { rev: calcVar(report.weekly.rev, report.prevWeekly.rev), cost: calcVar(report.weekly.cost, report.prevWeekly.cost, true), margin: calcVar(report.weekly.margin, report.prevWeekly.margin), orders: calcVar(report.weekly.orders, report.prevWeekly.orders) };\nlet mom = { rev: calcVar(report.monthly.rev, report.lastMonthly.rev), cost: calcVar(report.monthly.cost, report.lastMonthly.cost, true), margin: calcVar(report.monthly.margin, report.lastMonthly.margin), orders: calcVar(report.monthly.orders, report.lastMonthly.orders) };\nlet yoy = { rev: calcVar(report.monthly.rev, report.lastYearMonthly.rev), cost: calcVar(report.monthly.cost, report.lastYearMonthly.cost, true), margin: calcVar(report.monthly.margin, report.lastYearMonthly.margin), orders: calcVar(report.monthly.orders, report.lastYearMonthly.orders) };\n\n// --- 產生圖表 ---\nlet monthlyLabels = Object.keys(trendMonthly).sort();\nlet monthlyRevs = [], monthlyCosts = [], monthlyMargins = [];\nmonthlyLabels.forEach(l => { let r = trendMonthly[l].rev, c = trendMonthly[l].cost; monthlyRevs.push(r); monthlyCosts.push(c); monthlyMargins.push(r > 0 ? Number((((r-c)/r)*100).toFixed(1)) : 0); });\nconst urlTrendMonthly = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify({ type: 'bar', data: { labels: monthlyLabels, datasets: [ { type: 'line', label: 'Cash Margin (%)', data: monthlyMargins, borderColor: '#F59E0B', fill: false, yAxisID: 'y2' }, { type: 'bar', label: 'Cash In ($)', data: monthlyRevs, backgroundColor: '#3B82F6', yAxisID: 'y1' }, { type: 'bar', label: 'Cash Out ($)', data: monthlyCosts, backgroundColor: '#EF4444', yAxisID: 'y1' } ] }, options: { title: { display: true, text: 'Monthly Cash Flow Trend' }, scales: { yAxes: [ { id: 'y1', type: 'linear', position: 'left' }, { id: 'y2', type: 'linear', position: 'right', gridLines: { drawOnChartArea: false } } ] } } }))}`;\n\nlet occKeys = Object.keys(report.monthly.occasions).sort((a, b) => report.monthly.occasions[b] - report.monthly.occasions[a]);\nconst urlOccasion = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify({ type: 'horizontalBar', data: { labels: occKeys, datasets: [{ label: 'Orders', data: occKeys.map(k => report.monthly.occasions[k]), backgroundColor: '#64748B' }] }, options: { title: { display: true, text: 'MTD Occasion Distribution (Order Qty)' }, legend: { display: false }, scales: { xAxes: [{ ticks: { beginAtZero: true, stepSize: 1 } }] } } }))}`;\n\nconst urlChannel = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify({ type: 'pie', data: { labels: Object.keys(report.monthly.channels), datasets: [{ data: Object.values(report.monthly.channels), backgroundColor: ['#3B82F6', '#F59E0B'] }] }, options: { title: { display: true, text: 'MTD Channel' } } }))}`;\nconst urlCost = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify({ type: 'doughnut', data: { labels: Object.keys(report.monthly.costs), datasets: [{ data: Object.values(report.monthly.costs), backgroundColor: ['#EF4444', '#10B981', '#8B5CF6'] }] }, options: { title: { display: true, text: 'MTD Cost Structure' } } }))}`;\n\n// 🌟 新增：Top 5 耗損花材圖表 (Inventory Wastage)\nlet topWastedItems = Object.keys(wastageByItem).sort((a, b) => wastageByItem[b] - wastageByItem[a]).slice(0, 5);\nconst urlWastage = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify({ type: 'bar', data: { labels: topWastedItems, datasets: [{ label: 'Wasted Stems (Qty)', data: topWastedItems.map(k => wastageByItem[k]), backgroundColor: '#EF4444' }] }, options: { title: { display: true, text: 'Top 5 Spoilage Items (MTD)' }, legend: { display: false }, scales: { yAxes: [{ ticks: { beginAtZero: true } }] } } }))}`;\n\nconst semanticColors = { 'Pink': '#F472B6', 'Red': '#EF4444', 'Blue': '#3B82F6', 'White': '#E2E8F0', 'Yellow': '#FBBF24', 'Purple': '#8B5CF6', 'Orange': '#F97316', 'Peach': '#FDBA74', 'Champagne': '#FEF3C7', 'Green': '#10B981' };\nlet top5Colors = Object.keys(allColorsCount).sort((a,b) => allColorsCount[b] - allColorsCount[a]).slice(0, 5);\nlet colorDatasets = top5Colors.map((col) => { return { label: col, data: monthlyLabels.map(m => trendColorMonthly[m][col] || 0), backgroundColor: semanticColors[col] || '#94A3B8' }; });\nconst urlSeasonalColor = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify({ type: 'bar', data: { labels: monthlyLabels, datasets: colorDatasets }, options: { title: { display: true, text: 'Seasonal Color Demand' }, scales: { xAxes: [{ stacked: true }], yAxes: [{ stacked: true }] } } }))}`;\n\nlet currentTopColor = top5Colors.map(c => `${c}:${trendColorMonthly[currentMonthPrefix]?.[c]||0}`).join(', ');\n\nreturn [{\n  json: {\n    report, wow, mom, yoy, currentTopColor,\n    urlChannel, urlCost, urlTrendMonthly, urlOccasion, urlSeasonalColor, urlWastage,\n    latestDate: maxDateStr\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        528,
+        112
+      ],
+      "id": "8608d0e3-5f85-4efe-93f9-886e44f01d32",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "sendTo": "alyssa.portfolio.demo@gmail.com",
+        "subject": "=[CONFIDENTIAL] Weekly Business Review (WBR) | Operations & Strategy - {{ $node[\"Code\"].json[\"latestDate\"] }}",
+        "message": "=<div style=\"font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; max-width: 800px; margin: auto; padding: 35px; border: 1px solid #E2E8F0; border-radius: 4px; background-color: #ffffff; color: #334155;\">\n    \n    <h2 style=\"color: #0F172A; text-align: left; border-bottom: 2px solid #0F172A; padding-bottom: 12px; margin-bottom: 5px; font-size: 22px; text-transform: uppercase; letter-spacing: 0.5px;\">\n        Executive Operations & Financial Summary\n    </h2>\n    <p style=\"text-align: left; color: #64748B; font-size: 11px; font-weight: bold; letter-spacing: 1px; margin-top: 0; margin-bottom: 30px; text-transform: uppercase;\">\n        Report Generated: {{ $node[\"Code\"].json[\"latestDate\"] }}\n    </p>\n\n    <div style=\"background-color: #F8FAFC; padding: 20px 25px; border-left: 4px solid #3B82F6; margin-bottom: 20px;\">\n        <h3 style=\"color: #0F172A; margin-top: 0; margin-bottom: 12px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;\">Executive Summary & Strategic Outlook</h3>\n        <div style=\"font-size: 14px; line-height: 1.7; color: #334155;\">\n            {{ $node[\"Message a model\"].json.content.parts[0].text.replace(/```html/gi, '').replace(/```/gi, '') }}\n        </div>\n    </div>\n    \n    <div style=\"background-color: #F1F5F9; padding: 12px 20px; text-align: left; font-size: 13px; margin-bottom: 40px; border: 1px solid #E2E8F0; color: #475569;\">\n        <span style=\"font-weight: bold; color: #0F172A; letter-spacing: 0.5px;\">CURRENT MARKET DRIVERS</span> &nbsp;|&nbsp; \n        Top Occasions (MTD): <span style=\"font-weight: bold; color: #0F172A;\">{{ $node[\"Code\"].json[\"report\"][\"monthly\"][\"top3Occasions\"] }}</span> &nbsp;|&nbsp; \n        Top Color Demand (Weekly): <span style=\"font-weight: bold; color: #0F172A;\">{{ $node[\"Code\"].json[\"report\"][\"weekly\"][\"topColor\"] }}</span>\n    </div>\n\n    <h3 style=\"color: #0F172A; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;\">I. Financial & Operational Scorecard</h3>\n    <table width=\"100%\" style=\"border-collapse: collapse; text-align: left; font-size: 13px; margin-bottom: 45px;\">\n        <tr style=\"background-color: #F8FAFC; border-bottom: 2px solid #CBD5E1;\">\n            <th style=\"padding: 12px 15px; width: 20%; color: #0F172A; font-weight: bold;\">METRIC</th>\n            <th style=\"padding: 12px 15px; width: 35%; color: #0F172A; font-weight: bold;\">THIS WEEK (LAST 7 DAYS)</th>\n            <th style=\"padding: 12px 15px; width: 45%; color: #0F172A; font-weight: bold;\">THIS MONTH (MTD VS. PM / PY)</th>\n        </tr>\n        <tr style=\"border-bottom: 1px solid #E2E8F0;\">\n            <td style=\"padding: 15px; color: #475569; font-weight: bold;\">Cash In (Rev)</td>\n            <td style=\"padding: 15px;\">\n                <span style=\"font-size: 16px; font-weight: bold; color: #0F172A;\">${{ $node[\"Code\"].json[\"report\"][\"weekly\"][\"rev\"] }}</span><br>\n                <span style=\"font-size: 11px; font-weight: bold; color: {{ $node[\"Code\"].json[\"wow\"][\"rev\"][\"color\"] }};\">{{ $node[\"Code\"].json[\"wow\"][\"rev\"][\"str\"] }} WoW</span>\n            </td>\n            <td style=\"padding: 15px;\">\n                <span style=\"font-size: 16px; font-weight: bold; color: #0F172A;\">${{ $node[\"Code\"].json[\"report\"][\"monthly\"][\"rev\"] }}</span><br>\n                <span style=\"font-size: 11px; font-weight: bold; color: {{ $node[\"Code\"].json[\"mom\"][\"rev\"][\"color\"] }};\">{{ $node[\"Code\"].json[\"mom\"][\"rev\"][\"str\"] }} MoM</span> &nbsp;|&nbsp; \n                <span style=\"font-size: 11px; font-weight: bold; color: {{ $node[\"Code\"].json[\"yoy\"][\"rev\"][\"color\"] }};\">{{ $node[\"Code\"].json[\"yoy\"][\"rev\"][\"str\"] }} YoY</span>\n            </td>\n        </tr>\n        <tr style=\"background-color: #FAFAFA; border-bottom: 1px solid #E2E8F0;\">\n            <td style=\"padding: 15px; color: #475569; font-weight: bold;\">Cash Out (Cost)</td>\n            <td style=\"padding: 15px;\">\n                <span style=\"font-size: 16px; font-weight: bold; color: #0F172A;\">${{ $node[\"Code\"].json[\"report\"][\"weekly\"][\"cost\"] }}</span><br>\n                <span style=\"font-size: 11px; font-weight: bold; color: {{ $node[\"Code\"].json[\"wow\"][\"cost\"][\"color\"] }};\">{{ $node[\"Code\"].json[\"wow\"][\"cost\"][\"str\"] }} WoW</span>\n            </td>\n            <td style=\"padding: 15px;\">\n                <span style=\"font-size: 16px; font-weight: bold; color: #0F172A;\">${{ $node[\"Code\"].json[\"report\"][\"monthly\"][\"cost\"] }}</span><br>\n                <span style=\"font-size: 11px; font-weight: bold; color: {{ $node[\"Code\"].json[\"mom\"][\"cost\"][\"color\"] }};\">{{ $node[\"Code\"].json[\"mom\"][\"cost\"][\"str\"] }} MoM</span> &nbsp;|&nbsp; \n                <span style=\"font-size: 11px; font-weight: bold; color: {{ $node[\"Code\"].json[\"yoy\"][\"cost\"][\"color\"] }};\">{{ $node[\"Code\"].json[\"yoy\"][\"cost\"][\"str\"] }} YoY</span>\n            </td>\n        </tr>\n        <tr style=\"border-bottom: 1px solid #E2E8F0;\">\n            <td style=\"padding: 15px; color: #475569; font-weight: bold;\">Cash Margin</td>\n            <td style=\"padding: 15px;\">\n                <span style=\"font-size: 16px; font-weight: bold; color: #0F172A;\">{{ $node[\"Code\"].json[\"report\"][\"weekly\"][\"margin\"] }}%</span><br>\n                <span style=\"font-size: 11px; font-weight: bold; color: {{ $node[\"Code\"].json[\"wow\"][\"margin\"][\"color\"] }};\">{{ $node[\"Code\"].json[\"wow\"][\"margin\"][\"str\"] }} WoW</span>\n            </td>\n            <td style=\"padding: 15px;\">\n                <span style=\"font-size: 16px; font-weight: bold; color: #0F172A;\">{{ $node[\"Code\"].json[\"report\"][\"monthly\"][\"margin\"] }}%</span><br>\n                <span style=\"font-size: 11px; font-weight: bold; color: {{ $node[\"Code\"].json[\"mom\"][\"margin\"][\"color\"] }};\">{{ $node[\"Code\"].json[\"mom\"][\"margin\"][\"str\"] }} MoM</span> &nbsp;|&nbsp; \n                <span style=\"font-size: 11px; font-weight: bold; color: {{ $node[\"Code\"].json[\"yoy\"][\"margin\"][\"color\"] }};\">{{ $node[\"Code\"].json[\"yoy\"][\"margin\"][\"str\"] }} YoY</span>\n            </td>\n        </tr>\n        <tr style=\"background-color: #FAFAFA; border-bottom: 1px solid #E2E8F0;\">\n            <td style=\"padding: 15px; color: #475569; font-weight: bold;\">Total Orders</td>\n            <td style=\"padding: 15px;\">\n                <span style=\"font-size: 16px; font-weight: bold; color: #0F172A;\">{{ $node[\"Code\"].json[\"report\"][\"weekly\"][\"orders\"] }}</span><br>\n                <span style=\"font-size: 11px; font-weight: bold; color: {{ $node[\"Code\"].json[\"wow\"][\"orders\"][\"color\"] }};\">{{ $node[\"Code\"].json[\"wow\"][\"orders\"][\"str\"] }} WoW</span>\n            </td>\n            <td style=\"padding: 15px;\">\n                <span style=\"font-size: 16px; font-weight: bold; color: #0F172A;\">{{ $node[\"Code\"].json[\"report\"][\"monthly\"][\"orders\"] }}</span><br>\n                <span style=\"font-size: 11px; font-weight: bold; color: {{ $node[\"Code\"].json[\"mom\"][\"orders\"][\"color\"] }};\">{{ $node[\"Code\"].json[\"mom\"][\"orders\"][\"str\"] }} MoM</span> &nbsp;|&nbsp; \n                <span style=\"font-size: 11px; font-weight: bold; color: {{ $node[\"Code\"].json[\"yoy\"][\"orders\"][\"color\"] }};\">{{ $node[\"Code\"].json[\"yoy\"][\"orders\"][\"str\"] }} YoY</span>\n            </td>\n        </tr>\n    </table>\n\n    <h3 style=\"color: #0F172A; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;\">II. Monthly Macro Trends (MoM & YoY)</h3>\n    <div style=\"text-align: center; margin-bottom: 45px;\">\n        <img src=\"{{ $node[\"Code\"].json[\"urlTrendMonthly\"] }}\" style=\"width: 100%; max-width: 700px; border: 1px solid #E2E8F0; border-radius: 4px;\">\n    </div>\n\n    <h3 style=\"color: #0F172A; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;\">III. MTD Operational Breakdown</h3>\n    <div style=\"text-align: center; margin-bottom: 25px;\">\n        <img src=\"{{ $node[\"Code\"].json[\"urlOccasion\"] }}\" style=\"width: 100%; max-width: 700px; border: 1px solid #E2E8F0; border-radius: 4px;\">\n    </div>\n    <table width=\"100%\" style=\"text-align: center; margin-bottom: 45px;\">\n        <tr>\n            <td width=\"50%\" style=\"padding: 5px;\"><img src=\"{{ $node[\"Code\"].json[\"urlChannel\"] }}\" style=\"width: 100%; max-width: 330px; border: 1px solid #E2E8F0; border-radius: 4px;\"></td>\n            <td width=\"50%\" style=\"padding: 5px;\"><img src=\"{{ $node[\"Code\"].json[\"urlCost\"] }}\" style=\"width: 100%; max-width: 330px; border: 1px solid #E2E8F0; border-radius: 4px;\"></td>\n        </tr>\n    </table>\n\n    <h3 style=\"color: #0F172A; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;\">IV. Inventory Health & Spoilage</h3>\n    <div style=\"background-color: #FEF2F2; padding: 12px 20px; text-align: left; font-size: 13px; margin-bottom: 20px; border: 1px solid #FECACA; color: #991B1B;\">\n        <span style=\"font-weight: bold; letter-spacing: 0.5px;\">OVERALL SPOILAGE RATE (MTD):</span> \n        <span style=\"font-size: 16px; font-weight: bold;\">{{ $node[\"Code\"].json[\"report\"][\"monthly\"][\"spoilageRate\"] }}%</span>\n    </div>\n    <div style=\"text-align: center; margin-bottom: 45px;\">\n        <img src=\"{{ $node[\"Code\"].json[\"urlWastage\"] }}\" style=\"width: 100%; max-width: 700px; border: 1px solid #E2E8F0; border-radius: 4px;\">\n    </div>\n\n    <h3 style=\"color: #0F172A; border-bottom: 1px solid #E2E8F0; padding-bottom: 8px; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px;\">V. Seasonal Procurement Matrix</h3>\n    <p style=\"font-size: 12px; color: #64748B; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 0.5px;\">Historical Color Demand Mapping</p>\n    <div style=\"text-align: center; margin-bottom: 10px;\">\n        <img src=\"{{ $node[\"Code\"].json[\"urlSeasonalColor\"] }}\" style=\"width: 100%; max-width: 700px; border: 1px solid #E2E8F0; border-radius: 4px;\">\n    </div>\n\n    <div style=\"border-top: 1px solid #E2E8F0; margin-top: 40px; padding-top: 20px; text-align: center; font-size: 11px; color: #94A3B8;\">\n        CONFIDENTIAL & PROPRIETARY &copy; 2026<br>Automated via n8n Business Intelligence Pipeline\n    </div>\n\n</div>",
+        "options": {
+          "senderName": "BI Reporting System"
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        976,
+        112
+      ],
+      "id": "f2d6f5ad-124c-413a-8b33-3815d4ac08d5",
+      "name": "Send a message",
+      "webhookId": "3c02be70-df90-4397-811b-6f4f0ee3dd3d",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YfWDZJOcUgcCdr38",
+          "name": "demo"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        368,
+        112
+      ],
+      "id": "82282e8a-1e34-4e76-8d64-a3d4209b0fd8",
+      "name": "Merge"
+    }
+  ],
+  "pinData": {
+    "Schedule Trigger": [
+      {
+        "json": {
+          "timestamp": "2026-02-24T01:01:27.958-05:00",
+          "Readable date": "February 24th 2026, 1:01:27 am",
+          "Readable time": "1:01:27 am",
+          "Day of week": "Tuesday",
+          "Year": "2026",
+          "Month": "February",
+          "Day of month": "24",
+          "Hour": "01",
+          "Minute": "01",
+          "Second": "27",
+          "Timezone": "Asia/Hong_Kong (UTC+8)"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get Orders",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Costs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Orders": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Costs": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        []
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "f45c62af-9c2f-4b98-b784-fb3758098d6c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b59992f228d460acd2dfd38d130b72e82d63efdaed9ce6e647aac328e65c1cd5"
+  },
+  "id": "8jePj6sDhCu5BS6p",
+  "tags": []
+}
